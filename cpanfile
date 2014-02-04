@@ -3,10 +3,11 @@ requires "strict" => "0";
 requires "warnings" => "0";
 
 on 'test' => sub {
+  requires "Capture::Tiny" => "0.23";
   requires "ExtUtils::MakeMaker" => "0";
   requires "File::Spec::Functions" => "0";
   requires "List::Util" => "0";
-  requires "Test::More" => "0";
+  requires "Test::More" => "0.96";
   requires "version" => "0";
 };
 

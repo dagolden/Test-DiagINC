@@ -14,14 +14,10 @@ for my $file (qw/fails.t dies.t/) {
     my ( $stdout, $stderr ) = capture {
         system( $^X, "examples/$file" );
     };
+    like( $stderr, qr/\QListing modules from %INC/, "$file: Saw diagnostic header" );
     like(
         $stderr,
-        qr/\QListing modules and versions from %INC/,
-        "$file: Saw diagnostic header"
-    );
-    like(
-        $stderr,
-        qr/\QTest::DiagINC $diaginc_version/,
+        qr/\Q$diaginc_version\E\s+Test::DiagINC/,
         "$file: Saw Test::DiagINC in module list"
     );
 }

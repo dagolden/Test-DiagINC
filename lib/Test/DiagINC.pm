@@ -6,34 +6,43 @@ package Test::DiagINC;
 # ABSTRACT: List all modules and versions loaded if tests fail
 # VERSION
 
+sub _max_length {
+    my $max = 0;
+    do { $max = length if length > $max }
+      for @_;
+    return $max;
+}
+
 my $ORIGINAL_PID = $$;
 
 END {
     # Dump %INC if in the main process and have a non-zero exit code
     if ( $$ == $ORIGINAL_PID && $? ) {
-        # Some code copied/adapted from Dist::Zilla::Plugin::Test::PrereqsFromMeta
-        my @packages = grep {
-            s/\.pm\Z//
-              and do { s![\\/]!::!g; 1 }
-        } sort keys %INC;
+        my @packages;
+        for my $p ( sort keys %INC ) {
+            next unless $p =~ s/\.pm\z//;
+            $p =~ s{[\\/]}{::}g;
+            push @packages, $p if $p =~ /\A[A-Z_a-z][0-9A-Z_a-z]*(?:::[0-9A-Z_a-z]+)*\Z/;
+        }
 
         my %versions = map {
             my $v = eval { $_->VERSION };
             $_ => defined($v) ? $v : "undef"
         } @packages;
 
-        my $len = 0;
-        for (@packages) { $len = length if length > $len }
-        $len = 68 if $len > 68;
+        my $header = "Listing modules from %INC\n";
+        my $format = "  %*s %*s\n";
+        my $ml     = _max_length(@packages);
+        my $vl     = _max_length( values %versions );
 
         if ( $INC{"Test/Builder.pm"} ) {
             my $tb = Test::Builder->new;
-            $tb->diag("Listing modules and versions from %INC\n");
-            $tb->diag( sprintf( "%${len}s %s\n", $_, $versions{$_} ) ) for @packages;
+            $tb->diag($header);
+            $tb->diag( sprintf( $format, $vl, $versions{$_}, -$ml, $_ ) ) for @packages;
         }
         else {
-            print STDERR "# Listing modules and versions from %INC\n";
-            printf( STDERR "# %${len}s %s\n", $_, $versions{$_} ) for @packages;
+            print STDERR "# $header";
+            printf( STDERR "#$format", $vl, $versions{$_}, -$ml, $_ ) for @packages;
         }
     }
 }
@@ -70,20 +79,20 @@ For example:
     1..1
     # Looks like you failed 1 test of 1.
     # Listing modules and versions from %INC
-    #                Config 5.018002
-    #              Exporter 5.68
-    #       Exporter::Heavy 5.68
-    #                PerlIO 1.07
-    #         Test::Builder 1.001002
-    # Test::Builder::Module 1.001002
-    #         Test::DiagINC 0.001
-    #            Test::More 1.001002
-    #              overload 1.22
-    #           overloading 0.02
-    #                strict 1.07
-    #                  vars 1.03
-    #              warnings 1.18
-    #    warnings::register 1.02    
+    #   5.018002 Config
+    #       5.68 Exporter
+    #       5.68 Exporter::Heavy
+    #       1.07 PerlIO
+    #   1.001002 Test::Builder
+    #   1.001002 Test::Builder::Module
+    #      0.001 Test::DiagINC
+    #   1.001002 Test::More
+    #       1.22 overload
+    #       0.02 overloading
+    #       1.07 strict
+    #       1.03 vars
+    #       1.18 warnings
+    #       1.02 warnings::register
 
 B<NOTE>:  Because this module uses an C<END> block, it must be loaded B<before>
 C<Test::More> so that the C<Test::More>'s C<END> block has a chance to set

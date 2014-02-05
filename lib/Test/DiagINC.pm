@@ -109,8 +109,7 @@ C<Test::DiagINC> was loaded will be excluded from the report (e.g. excludes
 local modules from C<lib/>, C<t/lib>, and so on).
 
 The heuristic of searching C<%INC> for loaded modules may fail if the module
-path loaded does not map to a package within the module file or if that package
-does not define a C<$VERSION>.
+path loaded does not map to a package within the module file.
 
 If C<Test::More> is loaded, the output will go via the C<diag> function.
 Otherwise, it will just be sent to STDERR.

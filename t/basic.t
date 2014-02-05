@@ -9,8 +9,9 @@ for my $file (qw/fails.t dies.t/) {
     my ( $stdout, $stderr ) = capture {
         system( $^X, "examples/$file" );
     };
+
     like( $stderr, qr/\QListing modules from %INC/, "$file: Saw diagnostic header" );
-    like( $stderr, qr/[0-9.]+\s+Path::Tiny/, "$file: Saw Path::Tiny in module list" );
+    like( $stderr, qr/[0-9.]+\s+ExtUtils::MakeMaker/, "$file: Saw EUMM in module list" );
     unlike( $stderr, qr/Foo/, "$file: Did not see local module Foo in module list", );
 }
 

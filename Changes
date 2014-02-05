@@ -2,6 +2,9 @@ Revision history for Test-DiagINC
 
 {{$NEXT}}
 
+    - Minimize amount of reported modules: anything Test::DiagINC loads
+      in order to compile the report is excluded
+
 0.002     2014-02-04 22:17:58-05:00 America/New_York
 
     [CHANGED]

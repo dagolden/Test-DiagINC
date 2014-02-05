@@ -1,12 +1,16 @@
 use 5.008001;
-use strict;
-use warnings;
 
 package Test::DiagINC;
 # ABSTRACT: List modules and versions loaded if tests fail
 # VERSION
 
-use Path::Tiny;
+# If the tested module did not load strict/warnings we do not want
+# to load them either. On the other hand we would like to know our
+# code is at least somewhat ok. Therefore this madness ;)
+BEGIN { if($ENV{RELEASE_TESTING}) {
+    require warnings && warnings->import;
+    require strict && strict->import;
+} }
 
 sub _max_length {
     my $max = 0;
@@ -15,15 +19,34 @@ sub _max_length {
     return $max;
 }
 
+# Get our CWD *without* loading anything. The original idea by xdg++ was to
+# invoke a with an -e snippet, and not worry about quoting, but it seemed too
+# fragile. doing this trick instead (we know we can load ourselves):
+BEGIN {
+    if ($^C) {
+        require Cwd;
+        require POSIX;
+        $|++;
+        print Cwd::getcwd() . "\n";
+        POSIX::_exit(0);
+    }
+}
+chomp( my $REALPATH_CWD = `$^X -c @{[ __FILE__ ]}` );
 my $ORIGINAL_PID = $$;
-my $CWD          = path(".")->absolute;
 
 END {
     # Dump %INC if in the main process and have a non-zero exit code
     if ( $$ == $ORIGINAL_PID && $? ) {
+
+        # make sure we report only on stuff that was loaded by the test, nothing more
+        my @INC_list = keys %INC;
+
+        require Path::Tiny;
+        my $CWD = Path::Tiny::path($REALPATH_CWD);
+
         chdir $CWD; # improve resolution of relative path names
         my @packages;
-        for my $p ( sort keys %INC ) {
+        for my $p ( sort @INC_list ) {
             next unless defined( $INC{$p} ) && !$CWD->subsumes( $INC{$p} );
             next unless $p =~ s/\.pm\z//;
             $p =~ s{[\\/]}{::}g;
@@ -88,16 +111,26 @@ For example:
     #       5.68 Exporter
     #       5.68 Exporter::Heavy
     #       1.07 PerlIO
-    #   1.001002 Test::Builder
-    #   1.001002 Test::Builder::Module
-    #      0.001 Test::DiagINC
-    #   1.001002 Test::More
+    #       0.98 Test::Builder
+    #       0.98 Test::Builder::Module
+    #      0.003 Test::DiagINC
+    #       0.98 Test::More
     #       1.22 overload
     #       0.02 overloading
     #       1.07 strict
     #       1.03 vars
     #       1.18 warnings
     #       1.02 warnings::register
+
+This module deliberately does not load B<any other modules> during runtime,
+instead delaying all loads until it needs to generate a failure report in its
+C<END> block. The only exception is loading L<strict> and L<warnings> for
+self-check B<if and only if> C<RELEASE_TESTING> is true. Therefore an empty
+invocation will look like this:
+
+    $ perl -MTest::DiagINC -e 'exit(1)'
+    # Listing modules from %INC
+    #  0.003 Test::DiagINC
 
 B<NOTE>:  Because this module uses an C<END> block, it must be loaded B<before>
 C<Test::More> so that the C<Test::More>'s C<END> block has a chance to set
@@ -106,13 +139,14 @@ ensure your code generates the non-zero exit code (e.g. C<die()> or C<exit(1)>).
 
 Modules that appear to be sourced from below the current directory when
 C<Test::DiagINC> was loaded will be excluded from the report (e.g. excludes
-local modules from C<lib/>, C<t/lib>, and so on).
+local modules from C<./>, C<lib/>, C<t/lib>, and so on).
 
 The heuristic of searching C<%INC> for loaded modules may fail if the module
 path loaded does not map to a package within the module file.
 
 If C<Test::More> is loaded, the output will go via the C<diag> function.
 Otherwise, it will just be sent to STDERR.
+
 
 =cut
 

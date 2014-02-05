@@ -3,8 +3,10 @@ use strict;
 use warnings;
 
 package Test::DiagINC;
-# ABSTRACT: List all modules and versions loaded if tests fail
+# ABSTRACT: List modules and versions loaded if tests fail
 # VERSION
+
+use Path::Tiny;
 
 sub _max_length {
     my $max = 0;
@@ -14,12 +16,15 @@ sub _max_length {
 }
 
 my $ORIGINAL_PID = $$;
+my $CWD          = path(".")->absolute;
 
 END {
     # Dump %INC if in the main process and have a non-zero exit code
     if ( $$ == $ORIGINAL_PID && $? ) {
+        chdir $CWD; # improve resolution of relative path names
         my @packages;
         for my $p ( sort keys %INC ) {
+            next unless defined( $INC{$p} ) && !$CWD->subsumes( $INC{$p} );
             next unless $p =~ s/\.pm\z//;
             $p =~ s{[\\/]}{::}g;
             push @packages, $p if $p =~ /\A[A-Z_a-z][0-9A-Z_a-z]*(?:::[0-9A-Z_a-z]+)*\Z/;
@@ -67,8 +72,8 @@ versions were loaded during a test run.
 
 When this module is loaded, it sets up an C<END> block that will take action if
 a program exits with a non-zero exit code.  If that happens, this module prints
-out the names and version numbers of all modules appearing in C<%INC> at the
-end of the test.
+out the names and version numbers of non-local modules appearing in C<%INC> at
+the end of the test.
 
 For example:
 
@@ -98,6 +103,14 @@ B<NOTE>:  Because this module uses an C<END> block, it must be loaded B<before>
 C<Test::More> so that the C<Test::More>'s C<END> block has a chance to set
 the exit code first.  If you're not using C<Test::More>, then it's up to you to
 ensure your code generates the non-zero exit code (e.g. C<die()> or C<exit(1)>).
+
+Modules that appear to be sourced from below the current directory when
+C<Test::DiagINC> was loaded will be excluded from the report (e.g. excludes
+local modules from C<lib/>, C<t/lib>, and so on).
+
+The heuristic of searching C<%INC> for loaded modules may fail if the module
+path loaded does not map to a package within the module file or if that package
+does not define a C<$VERSION>.
 
 If C<Test::More> is loaded, the output will go via the C<diag> function.
 Otherwise, it will just be sent to STDERR.

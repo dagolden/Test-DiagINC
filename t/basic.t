@@ -4,22 +4,14 @@ use warnings;
 use Test::More 0.96;
 use Capture::Tiny 0.23 qw/capture/;
 
-require Test::DiagINC;
-
-my $diaginc_version = Test::DiagINC->VERSION;
-$diaginc_version = 'undef' unless defined $diaginc_version;
-
 for my $file (qw/fails.t dies.t/) {
     $ENV{AUTOMATED_TESTING} = 1;
     my ( $stdout, $stderr ) = capture {
         system( $^X, "examples/$file" );
     };
     like( $stderr, qr/\QListing modules from %INC/, "$file: Saw diagnostic header" );
-    like(
-        $stderr,
-        qr/\Q$diaginc_version\E\s+Test::DiagINC/,
-        "$file: Saw Test::DiagINC in module list"
-    );
+    like( $stderr, qr/[0-9.]+\s+Path::Tiny/, "$file: Saw Path::Tiny in module list" );
+    unlike( $stderr, qr/Foo/, "$file: Did not see local module Foo in module list", );
 }
 
 done_testing;

@@ -46,11 +46,14 @@ END {
 
         chdir $CWD; # improve resolution of relative path names
         my @packages;
-        for my $p ( sort @INC_list ) {
-            next unless defined( $INC{$p} ) && !$CWD->subsumes( $INC{$p} );
-            next unless $p =~ s/\.pm\z//;
-            $p =~ s{[\\/]}{::}g;
-            push @packages, $p if $p =~ /\A[A-Z_a-z][0-9A-Z_a-z]*(?:::[0-9A-Z_a-z]+)*\Z/;
+        for my $pkg_as_path ( sort @INC_list ) {
+            next unless defined $INC{$pkg_as_path};
+            next unless (my $p = $pkg_as_path) =~ s/\.pm\z//;
+            $p =~ s{/}{::}g;
+            next unless $p =~ /\A[A-Z_a-z][0-9A-Z_a-z]*(?:::[0-9A-Z_a-z]+)*\Z/;
+            next if $CWD->subsumes( $INC{$pkg_as_path} );
+
+            push @packages, $p;
         }
 
         my %versions = map {

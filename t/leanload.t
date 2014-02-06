@@ -17,12 +17,16 @@ BEGIN {
         require strict && strict->import;
     }
 
-    @::initial_INC = keys %INC
+    @::initial_INC = keys %INC;
+
+    unless ($] < 5.008) {
+        @::B_inc = split /\0/, `$^X -Mt::lib::B_laced_INC_dump`;
+    }
 }
 
 my $nongreat_success;
 END {
-    cmp_inc_contents( @::initial_INC, 'Test/DiagINC.pm' );
+    cmp_inc_contents( @::initial_INC, 'Test/DiagINC.pm', @::B_inc );
     print "1..4\n";
     $? ||= ( $nongreat_success || 0 );
 }
@@ -30,8 +34,9 @@ END {
 sub cmp_inc_contents {
     my %current_inc = %INC;
 
-    my @leftover_keys;
+    my ($seen, @leftover_keys);
     for (@_) {
+        next if $seen->{$_}++;
         if (exists $current_inc{$_}) {
             delete $current_inc{$_}
         }
@@ -63,7 +68,6 @@ sub cmp_inc_contents {
 
     $nongreat_success += $fail;
 }
-
 
 use Test::DiagINC;
 

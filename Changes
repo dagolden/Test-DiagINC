@@ -2,6 +2,8 @@ Revision history for Test-DiagINC
 
 {{$NEXT}}
 
+    - More robust error condition detection - now triggers on failures
+      in END-block-based test modules (e.g. Test::NoWarnings)
     - Minimize amount of reported modules: anything Test::DiagINC loads
       in order to compile the report is excluded
     - No longr chdir() during the local-library heuristic

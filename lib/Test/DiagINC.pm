@@ -90,19 +90,25 @@ sub _assert_no_fail {
             $_ => defined($v) ? $v : "undef"
         } @packages;
 
-        my $header = "Listing modules from %INC\n";
-        my $format = "  %*s %*s\n";
-        my $ml     = _max_length(@packages);
-        my $vl     = _max_length( values %versions );
+        my $diag = "Listing modules from %INC\n";
+
+        my $ml = _max_length(@packages);
+        my $vl = _max_length( values %versions );
+
+        for (@packages) {
+            $diag .= sprintf( " %*s  %*s\n",
+                # pairs of [ padding-length => content ]
+                $vl   =>  $versions{$_},
+                -$ml  =>  $_
+            )
+        }
 
         if ( $INC{"Test/Builder.pm"} ) {
-            my $tb = Test::Builder->new;
-            $tb->diag($header);
-            $tb->diag( sprintf( $format, $vl, $versions{$_}, -$ml, $_ ) ) for @packages;
+            Test::Builder->new->diag($diag);
         }
         else {
-            print STDERR "# $header";
-            printf( STDERR "#$format", $vl, $versions{$_}, -$ml, $_ ) for @packages;
+            $diag =~ s/^/# /mg;
+            print STDERR $diag;
         }
 
         return 0;

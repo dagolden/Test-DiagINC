@@ -26,17 +26,48 @@ my $REALPATH_CWD = `$^X -MCwd -e print+getcwd`;
 my $ORIGINAL_PID = $$;
 
 END {
-    # Dump %INC if in the main process and have a non-zero exit code
-    if ( $$ == $ORIGINAL_PID && $? ) {
-
-        # make sure we report only on stuff that was loaded by the test, nothing more
+    if ( $$ == $ORIGINAL_PID ) {
+        # make sure we report only on stuff that was loaded by the test,
+        # nothing more
+        # get a snapshot early in order to not misreport B.pm and friends
+        # below - this *will* skip any extra modules loaded in END, it was
+        # deemed an acceptable compromise by ribasushi and xdg
         my @INC_list = keys %INC;
 
+        # If we meet the "fail" criteria - no need to load B and fire
+        # an extra check in an extra END (also doesn't work on 5.6)
+        if ( _assert_no_fail(@INC_list) and $] >= 5.008) {
+
+            # we did not report anything yet - add an extra END to catch
+            # possible future-fails
+            require B;
+            push @{ B::end_av()->object_2svref }, sub {
+                _assert_no_fail(@INC_list)
+            };
+        }
+    }
+}
+
+# Dump %INC IFF in the main process and test is failing or exit is non-zero
+# return true if no failure or if PID mismatches, return false otherwise
+sub _assert_no_fail {
+
+    return 1 if $$ != $ORIGINAL_PID;
+
+    if ( $? or (
+        $INC{'Test/Builder.pm'}
+            and
+        Test::Builder->can('is_passing')
+            and
+        ! Test::Builder->new->is_passing
+    ) ) {
+
+        require Cwd;
         require File::Spec;
         require Cwd;
 
         my @packages;
-        for my $pkg_as_path ( sort @INC_list ) {
+        for my $pkg_as_path ( sort @_ ) {
             next unless defined $INC{$pkg_as_path};
             next unless (my $p = $pkg_as_path) =~ s/\.pm\z//;
             $p =~ s{/}{::}g;
@@ -73,7 +104,11 @@ END {
             print STDERR "# $header";
             printf( STDERR "#$format", $vl, $versions{$_}, -$ml, $_ ) for @packages;
         }
+
+        return 0;
     }
+
+    return 1;
 }
 
 1;
@@ -82,7 +117,7 @@ END {
 
 =head1 SYNOPSIS
 
-    # Load *BEFORE* Test::More
+    # preferably load before anything else
     use if $ENV{AUTOMATED_TESTING}, 'Test::DiagINC';
     use Test::More;
 
@@ -95,9 +130,11 @@ diagnose deep dependency problems by showing you exactly what modules and
 versions were loaded during a test run.
 
 When this module is loaded, it sets up an C<END> block that will take action if
-a program exits with a non-zero exit code.  If that happens, this module prints
-out the names and version numbers of non-local modules appearing in C<%INC> at
-the end of the test.
+the program is about to exit with a non-zero exit code or if
+L<< $test_builder->is_passing|Test::Builder/is_passing >>
+is false by the time the C<END> block is reached.  If that happens, this module
+prints out the names and version numbers of non-local modules appearing in
+L<%INC|perlvar/%INC> at the end of the test.
 
 For example:
 
@@ -133,10 +170,14 @@ invocation will look like this:
     # Listing modules from %INC
     #  0.003 Test::DiagINC
 
-B<NOTE>:  Because this module uses an C<END> block, it must be loaded B<before>
-C<Test::More> so that the C<Test::More>'s C<END> block has a chance to set
-the exit code first.  If you're not using C<Test::More>, then it's up to you to
-ensure your code generates the non-zero exit code (e.g. C<die()> or C<exit(1)>).
+B<NOTE>:  Because this module uses an C<END> block, it is a good idea to load
+it as early as possible, so the C<END> block it installs will execute as
+B<late> as possible (see L<perlmod> for details on how this works). While
+this module does employ some cleverness to work around load order, it is
+still a heuristic and is no substitute to loading this module early. A notable
+side-effect is when a module is loaded in an C<END> block executing B<after>
+the one installed by this library: such modules will be "invisible" to us and
+will not be reported as part of the diagnostic report.
 
 Modules that appear to be sourced from below the current directory when
 C<Test::DiagINC> was loaded will be excluded from the report (e.g. excludes
@@ -147,7 +188,6 @@ path loaded does not map to a package within the module file.
 
 If C<Test::More> is loaded, the output will go via the C<diag> function.
 Otherwise, it will just be sent to STDERR.
-
 
 =cut
 

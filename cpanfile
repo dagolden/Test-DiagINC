@@ -1,5 +1,4 @@
-requires "Path::Tiny" => "0";
-requires "perl" => "5.008001";
+requires "perl" => "5.006";
 requires "strict" => "0";
 requires "warnings" => "0";
 

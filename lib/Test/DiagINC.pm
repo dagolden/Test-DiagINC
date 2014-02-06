@@ -1,4 +1,4 @@
-use 5.008001;
+use 5.006;
 
 package Test::DiagINC;
 # ABSTRACT: List modules and versions loaded if tests fail
@@ -32,17 +32,24 @@ END {
         # make sure we report only on stuff that was loaded by the test, nothing more
         my @INC_list = keys %INC;
 
-        require Path::Tiny;
-        my $CWD = Path::Tiny::path($REALPATH_CWD);
+        require File::Spec;
+        require Cwd;
 
-        chdir $CWD; # improve resolution of relative path names
         my @packages;
         for my $pkg_as_path ( sort @INC_list ) {
             next unless defined $INC{$pkg_as_path};
             next unless (my $p = $pkg_as_path) =~ s/\.pm\z//;
             $p =~ s{/}{::}g;
             next unless $p =~ /\A[A-Z_a-z][0-9A-Z_a-z]*(?:::[0-9A-Z_a-z]+)*\Z/;
-            next if $CWD->subsumes( $INC{$pkg_as_path} );
+
+            next if (
+                # rel2abs on an absolute path is a noop
+                # https://metacpan.org/source/SMUELLER/PathTools-3.40/lib/File/Spec/Unix.pm#L474
+                # https://metacpan.org/source/SMUELLER/PathTools-3.40/lib/File/Spec/Win32.pm#L324
+                Cwd::realpath( File::Spec->rel2abs( $INC{$pkg_as_path}, $REALPATH_CWD ) )
+                  =~
+                m| \A \Q$REALPATH_CWD\E [\\\/] |x
+            );
 
             push @packages, $p;
         }

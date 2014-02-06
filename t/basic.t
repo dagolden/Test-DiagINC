@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More 0.96;
-use Capture::Tiny 0.23 qw/capture/;
+use Capture::Tiny 0.21 qw/capture/;
 
 for my $file (qw/fails.t dies.t/) {
     $ENV{AUTOMATED_TESTING} = 1;

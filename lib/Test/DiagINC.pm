@@ -75,12 +75,23 @@ sub _assert_no_fail {
         require File::Spec;
         require Cwd;
 
-        my @packages;
-        for my $pkg_as_path ( sort @_ ) {
-            next unless defined $INC{$pkg_as_path};
+        my %results;
+
+        for my $pkg_as_path ( @_ ) {
             next unless (my $p = $pkg_as_path) =~ s/\.pm\z//;
             $p =~ s{/}{::}g;
             next unless $p =~ /\A[A-Z_a-z][0-9A-Z_a-z]*(?:::[0-9A-Z_a-z]+)*\Z/;
+
+            # a module we recorded as INCed disappeared...
+            if (not exists $INC{$pkg_as_path}) {
+                $results{$p} = 'Module unloaded in END...?';
+                next;
+            }
+
+            if (not defined $INC{$pkg_as_path} ) {
+                $results{$p} = 'Found and failed to load';
+                next;
+            }
 
             next if (
                 # rel2abs on an absolute path is a noop
@@ -91,23 +102,24 @@ sub _assert_no_fail {
                 m| \A \Q$REALPATH_CWD\E [\\\/] |x
             );
 
-            push @packages, $p;
+            my $ver = do {
+                local $@;
+                my $v = eval { $p->VERSION };
+                $@ ? '->VERSION call failed' : $v
+            };
+            $ver = 'n/a' unless defined $ver;
+            $results{$p} = $ver;
         }
-
-        my %versions = map {
-            my $v = eval { $_->VERSION };
-            $_ => defined($v) ? $v : "undef"
-        } @packages;
 
         my $diag = "Listing modules from %INC\n";
 
-        my $ml = _max_length(@packages);
-        my $vl = _max_length( values %versions );
+        my $ml = _max_length( keys %results );
+        my $vl = _max_length( values %results );
 
-        for (@packages) {
+        for (sort keys %results) {
             $diag .= sprintf( " %*s  %*s\n",
                 # pairs of [ padding-length => content ]
-                $vl   =>  $versions{$_},
+                $vl   =>  $results{$_},
                 -$ml  =>  $_
             )
         }

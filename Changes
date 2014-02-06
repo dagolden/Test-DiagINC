@@ -4,6 +4,7 @@ Revision history for Test-DiagINC
 
     - More robust error condition detection - now triggers on failures
       in END-block-based test modules (e.g. Test::NoWarnings)
+    - Add diagnostic of "Attempted-but-failed-to-load" on perl >= 5.10
     - Minimize amount of reported modules: anything Test::DiagINC loads
       in order to compile the report is excluded
     - No longr chdir() during the local-library heuristic

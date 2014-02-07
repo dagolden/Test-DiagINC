@@ -22,7 +22,12 @@ sub _max_length {
 # Get our CWD *without* loading anything. Original idea by xdg++
 # ribasushi thinks this is fragile and will break sooner rather than
 # later, but adding it as is because haarg and xdg both claim it's fine
-my $REALPATH_CWD = `$^X -MCwd -e print+getcwd`;
+my $REALPATH_CWD = do {
+    local $ENV{PATH};
+    my ($perl) = $^X =~ /(.+)/; # $^X is internal how could it be tainted?!
+    `$perl -MCwd -e print+getcwd`;
+};
+
 my $ORIGINAL_PID = $$;
 
 END {

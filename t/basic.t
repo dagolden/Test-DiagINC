@@ -8,10 +8,22 @@ push @testfiles, 'fails_in_end.t' unless $] < 5.008;
 
 plan tests => @testfiles * ($] < 5.010 ? 3 : 4);
 
+my $tainted_run = ! eval { $ENV{PATH} . kill(0) and 1 }
+  and diag ( __FILE__ . ' running under taint mode' );
+
+local $ENV{AUTOMATED_TESTING} = 1;
+
+# untaint PATH but do not unset it so we test that $^X will
+# run with it just fine
+local ( $ENV{PATH} ) = $ENV{PATH} =~ /(.*)/ if $tainted_run;
+
 for my $file (@testfiles) {
-    $ENV{AUTOMATED_TESTING} = 1;
     my ( $stdout, $stderr ) = capture {
-        system( $^X, "examples/$file" );
+        system(
+            ($^X =~ /(.+)/),  # $^X is internal how can it be tainted?!
+            ( $tainted_run ? (qw( -I . -I lib -T )) : () ),
+            "examples/$file"
+        );
     };
 
     like( $stderr, qr/\QListing modules from %INC/, "$file: Saw diagnostic header" );

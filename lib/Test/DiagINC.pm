@@ -31,7 +31,11 @@ BEGIN {
         POSIX::_exit(0);
     }
 }
-chomp( my $REALPATH_CWD = `$^X -c @{[ __FILE__ ]}` );
+chomp( my $REALPATH_CWD = do {
+  local $ENV{PATH};
+  my ($perl) = $^X =~ /(.+)/; # $^X is internal how could it be tainted?!
+  `$perl -c @{[ __FILE__ ]}`;
+});
 my $ORIGINAL_PID = $$;
 
 END {

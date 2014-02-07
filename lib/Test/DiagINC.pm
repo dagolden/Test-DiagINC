@@ -27,8 +27,9 @@ sub _max_length {
 my $REALPATH_CWD = do {
     local $ENV{PATH};
     my ($perl) = $^X =~ /(.+)/; # $^X is internal how could it be tainted?!
-    `$perl -MCwd -e print+getcwd`;
+    `"$perl" -MCwd -le "print getcwd"`;
 };
+chomp $REALPATH_CWD;
 
 my $ORIGINAL_PID = $$;
 

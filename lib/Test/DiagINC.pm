@@ -105,7 +105,7 @@ sub _assert_no_fail {
                 my $v = eval { $p->VERSION };
                 $@ ? '->VERSION call failed' : $v;
             };
-            $ver = 'n/a' unless defined $ver;
+            $ver = 'undef' unless defined $ver;
             $results{$p} = $ver;
         }
 

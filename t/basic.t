@@ -2,6 +2,8 @@ use strict;
 use warnings;
 use Test::More;
 use Capture::Tiny 0.21 qw/capture/;
+use File::Spec;
+use Config;
 
 my @testfiles = qw/fails.t dies.t/;
 push @testfiles, 'fails_in_end.t' unless $] < 5.008;
@@ -14,8 +16,19 @@ my $tainted_run = !eval { $ENV{PATH} . kill(0) and 1 }
 local $ENV{AUTOMATED_TESTING} = 1;
 
 # untaint PATH but do not unset it so we test that $^X will
-# run with it just fine
-local ( $ENV{PATH} ) = $ENV{PATH} =~ /(.*)/ if $tainted_run;
+# run with it just fine;  Sadly, Travis CI runs with relative
+# paths in PATH so we have to make them absolute, which also
+# taints them, so we untaint only after we're all done cleaning
+if ($tainted_run) {
+    my $new_path = join(
+        $Config{path_sep},
+        map    { File::Spec->rel2abs($_) }
+          grep { length($_) }
+          split /\Q$Config{path_sep}\E/,
+        $ENV{PATH}
+    );
+    ( $ENV{PATH} ) = $new_path =~ /(.*)/;
+}
 
 for my $file (@testfiles) {
     my ( $stdout, $stderr ) = capture {

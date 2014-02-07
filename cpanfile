@@ -1,3 +1,6 @@
+requires "B" => "0";
+requires "Cwd" => "0";
+requires "File::Spec" => "0";
 requires "perl" => "5.006";
 requires "strict" => "0";
 requires "warnings" => "0";

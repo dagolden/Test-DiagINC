@@ -7,10 +7,12 @@ package Test::DiagINC;
 # If the tested module did not load strict/warnings we do not want
 # to load them either. On the other hand we would like to know our
 # code is at least somewhat ok. Therefore this madness ;)
-BEGIN { if($ENV{RELEASE_TESTING}) {
-    require warnings && warnings->import;
-    require strict && strict->import;
-} }
+BEGIN {
+    if ( $ENV{RELEASE_TESTING} ) {
+        require warnings && warnings->import;
+        require strict   && strict->import;
+    }
+}
 
 sub _max_length {
     my $max = 0;
@@ -41,13 +43,13 @@ END {
 
         # If we meet the "fail" criteria - no need to load B and fire
         # an extra check in an extra END (also doesn't work on 5.6)
-        if ( _assert_no_fail(@INC_list) and $] >= 5.008) {
+        if ( _assert_no_fail(@INC_list) and $] >= 5.008 ) {
 
             # we did not report anything yet - add an extra END to catch
             # possible future-fails
             require B;
             push @{ B::end_av()->object_2svref }, sub {
-                _assert_no_fail(@INC_list)
+                _assert_no_fail(@INC_list);
             };
         }
     }
@@ -59,13 +61,13 @@ sub _assert_no_fail {
 
     return 1 if $$ != $ORIGINAL_PID;
 
-    if ( $? or (
-        $INC{'Test/Builder.pm'}
-            and
-        Test::Builder->can('is_passing')
-            and
-        ! Test::Builder->new->is_passing
-    ) ) {
+    if (
+        $?
+        or (    $INC{'Test/Builder.pm'}
+            and Test::Builder->can('is_passing')
+            and !Test::Builder->new->is_passing )
+      )
+    {
 
         require Cwd;
         require File::Spec;
@@ -73,35 +75,35 @@ sub _assert_no_fail {
 
         my %results;
 
-        for my $pkg_as_path ( @_ ) {
-            next unless (my $p = $pkg_as_path) =~ s/\.pm\z//;
+        for my $pkg_as_path (@_) {
+            next unless ( my $p = $pkg_as_path ) =~ s/\.pm\z//;
             $p =~ s{/}{::}g;
             next unless $p =~ /\A[A-Z_a-z][0-9A-Z_a-z]*(?:::[0-9A-Z_a-z]+)*\Z/;
 
             # a module we recorded as INCed disappeared...
-            if (not exists $INC{$pkg_as_path}) {
+            if ( not exists $INC{$pkg_as_path} ) {
                 $results{$p} = 'Module unloaded in END...?';
                 next;
             }
 
-            if (not defined $INC{$pkg_as_path} ) {
+            if ( not defined $INC{$pkg_as_path} ) {
                 $results{$p} = 'Found and failed to load';
                 next;
             }
 
-            next if (
+            next
+              if (
                 # rel2abs on an absolute path is a noop
                 # https://metacpan.org/source/SMUELLER/PathTools-3.40/lib/File/Spec/Unix.pm#L474
                 # https://metacpan.org/source/SMUELLER/PathTools-3.40/lib/File/Spec/Win32.pm#L324
                 Cwd::realpath( File::Spec->rel2abs( $INC{$pkg_as_path}, $REALPATH_CWD ) )
-                  =~
-                m| \A \Q$REALPATH_CWD\E [\\\/] |x
-            );
+                =~ m| \A \Q$REALPATH_CWD\E [\\\/] |x
+              );
 
             my $ver = do {
                 local $@;
                 my $v = eval { $p->VERSION };
-                $@ ? '->VERSION call failed' : $v
+                $@ ? '->VERSION call failed' : $v;
             };
             $ver = 'n/a' unless defined $ver;
             $results{$p} = $ver;
@@ -112,12 +114,13 @@ sub _assert_no_fail {
         my $ml = _max_length( keys %results );
         my $vl = _max_length( values %results );
 
-        for (sort keys %results) {
-            $diag .= sprintf( " %*s  %*s\n",
+        for ( sort keys %results ) {
+            $diag .= sprintf(
+                " %*s  %*s\n",
                 # pairs of [ padding-length => content ]
-                $vl   =>  $results{$_},
-                -$ml  =>  $_
-            )
+                $vl  => $results{$_},
+                -$ml => $_
+            );
         }
 
         if ( $INC{"Test/Builder.pm"} ) {

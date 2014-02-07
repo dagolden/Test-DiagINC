@@ -1,7 +1,7 @@
 my %inc_copy = %INC;
-delete $inc_copy{+__FILE__};
+delete $inc_copy{ +__FILE__ };
 
-if (keys %inc_copy) {
+if ( keys %inc_copy ) {
     print STDERR "%INC can not be populated when loading @{[ __FILE__ ]}\n";
     exit 255;
 }

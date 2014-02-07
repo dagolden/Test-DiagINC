@@ -11,7 +11,5 @@ if ($?) {
 }
 
 # all is well - just rerun the basic test
-exec( $^X => -T => File::Spec->catpath(
-    (File::Spec->splitpath( __FILE__ ))[0,1],
-    'basic.t'
-) );
+exec( $^X => -T =>
+      File::Spec->catpath( ( File::Spec->splitpath(__FILE__) )[ 0, 1 ], 'basic.t' ) );

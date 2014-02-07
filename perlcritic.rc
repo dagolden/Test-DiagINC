@@ -24,3 +24,5 @@ variables = $DB::single
 # Turn this on
 [Lax::ProhibitStringyEval::ExceptForRequire]
 
+# Turn this off
+[-TestingAndDebugging::RequireUseStrict]

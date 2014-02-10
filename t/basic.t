@@ -20,6 +20,7 @@ local $ENV{AUTOMATED_TESTING} = 1;
 # paths in PATH so we have to make them absolute, which also
 # taints them, so we untaint only after we're all done cleaning
 if ($tainted_run) {
+    delete $ENV{$_} for qw(IFS CDPATH ENV BASH_ENV);
     my $new_path = join(
         $Config{path_sep},
         map    { File::Spec->rel2abs($_) }

@@ -2,6 +2,10 @@ Revision history for Test-DiagINC
 
 {{$NEXT}}
 
+    [FIXED]
+
+    - Localizes more %ENV vars to work under taint mode
+
 0.003     2014-02-07 12:54:54-05:00 America/New_York
 
     [CHANGED]

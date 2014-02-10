@@ -23,9 +23,14 @@ sub _max_length {
 
 # Get our CWD *without* loading anything. Original idea by xdg++
 # ribasushi thinks this is fragile and will break sooner rather than
-# later, but adding it as is because haarg and xdg both claim it's fine
+# later, but adding it as is because haarg and xdg both claim it's fine.
+# Requires %ENV cleanup to work under taint mode
 my $REALPATH_CWD = do {
     local $ENV{PATH};
+    local $ENV{IFS};
+    local $ENV{CDPATH};
+    local $ENV{ENV};
+    local $ENV{BASH_ENV};
     my ($perl) = $^X =~ /(.+)/; # $^X is internal how could it be tainted?!
     `"$perl" -MCwd -le "print getcwd"`;
 };

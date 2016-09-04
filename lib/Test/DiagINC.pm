@@ -2,7 +2,8 @@ use 5.006;
 
 package Test::DiagINC;
 # ABSTRACT: List modules and versions loaded if tests fail
-# VERSION
+
+our $VERSION = '0.004';
 
 # If the tested module did not load strict/warnings we do not want
 # to load them either. On the other hand we would like to know our

@@ -21,4 +21,4 @@ for my $env ( grep { defined $ENV{$_} } (qw/PERL5LIB PERLLIB/) ) {
 
 # all is well - just rerun the basic test
 exec( $^X => -T => @lib_switches =>
-      File::Spec->catpath( ( File::Spec->splitpath(__FILE__) )[ 0, 1 ], 'basic.t' ) );
+      File::Spec->catpath( ( File::Spec->splitpath(__FILE__) )[ 0, 1 ], '../../t/basic.t' ) );

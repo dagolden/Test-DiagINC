@@ -2,6 +2,10 @@ Revision history for Test-DiagINC
 
 {{$NEXT}}
 
+    [TESTS]
+
+    - Skips taint tests on MSWin32 to avoid File::Temp bugs
+
 0.004     2014-02-10 13:02:39-05:00 America/New_York
 
     [FIXED]

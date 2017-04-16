@@ -2,6 +2,10 @@ Revision history for Test-DiagINC
 
 {{$NEXT}}
 
+    [FIXED]
+
+    - Fixed tests for perls without '.' in @INC
+
 0.006     2016-09-23 20:39:00-04:00 America/New_York
 
     - No changes from 0.005.

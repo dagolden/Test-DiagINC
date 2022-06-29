@@ -28,10 +28,15 @@ sub _max_length {
 # Requires %ENV cleanup to work under taint mode
 my $REALPATH_CWD = do {
     local $ENV{PATH};
+    delete $ENV{PATH};
     local $ENV{IFS};
+    delete $ENV{IFS};
     local $ENV{CDPATH};
+    delete $ENV{CDPATH};
     local $ENV{ENV};
+    delete $ENV{ENV};
     local $ENV{BASH_ENV};
+    delete $ENV{BASH_ENV};
     my ($perl) = $^X =~ /(.+)/; # $^X is internal how could it be tainted?!
     `"$perl" -MCwd -le "print getcwd"`;
 };

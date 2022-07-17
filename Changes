@@ -2,6 +2,11 @@ Revision history for Test-DiagINC
 
 {{$NEXT}}
 
+    [FIXED]
+
+    - Deletes ENV vars after localizing to avoid problems when they are undef
+      rather than the empty string.
+
 0.008     2017-07-26 10:36:28-04:00 America/New_York
 
     - No changes from 0.007.
